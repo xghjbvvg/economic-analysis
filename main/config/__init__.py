@@ -1,5 +1,7 @@
 from flasgger import Swagger
 from flask import Flask
+from flask_cors import CORS
+
 from main.config.config import config, template_config, swagger_config, DevelopmentConfig
 from flask_sqlalchemy import SQLAlchemy
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -14,6 +16,7 @@ def timed_task():
 
 def create_app(config_name):
     app = Flask(__name__)
+    CORS(app, resources=r'/*')
     app.config.from_object(config[config_name])
     config[config_name].init_app(app=app)
     db.init_app(app=app)
@@ -32,6 +35,6 @@ def create_app(config_name):
     app.register_blueprint(errors)
 
     # 注册到蓝图
-    from main.controllers.office_api import office_app
-    app.register_blueprint(office_app)
+    from main.controllers.stock_api import stock_app
+    app.register_blueprint(stock_app)
     return app
