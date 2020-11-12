@@ -77,7 +77,7 @@ def shang_stock_exchange():
         x_set
     ).set_global_opts(
         xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
-        title_opts=opts.TitleOpts(title="上交所", subtitle="市场详情"),
+        title_opts=opts.TitleOpts(title="上交所总貌", subtitle="市场详情"),
         yaxis_opts=opts.AxisOpts(
             axislabel_opts=opts.LabelOpts(
                 formatter="{value}")),
@@ -94,7 +94,7 @@ def shang_stock_exchange():
 
 
 # 深交所
-@stock_app.route("/shen_stock_exchange")
+@stock_app.route("/sheng_stock_exchange")
 def shen_stock_exchange():
     stock_szse_summary_df = ak.stock_szse_summary()
     # print(stock_szse_summary_df)
@@ -107,12 +107,12 @@ def shen_stock_exchange():
     c = (
         Pie(init_opts=opts.InitOpts(width="1600px", height="1000px"))
             .add(
-            "深交所",
+            "深交所总貌",
             [list(z) for z in zip(category, number)],
             center=["35%", "50%"],
         )
             .set_global_opts(
-            title_opts=opts.TitleOpts(title="深交所"),
+            title_opts=opts.TitleOpts(title="深交所总貌"),
             legend_opts=opts.LegendOpts(pos_left="15%"),
         )
             .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c} ({d}%)"))
@@ -122,6 +122,5 @@ def shen_stock_exchange():
             ))
 
     )
-
-    return Markup(c.render_embed())
-
+    response = ReponseBuilder(True, c.dump_options_with_quotes());
+    return json.dumps(response.__dict__);
