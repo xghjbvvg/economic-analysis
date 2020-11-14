@@ -5,7 +5,7 @@ from markupsafe import Markup
 
 from main.config import db
 from main.config.ResponseBuilder import ReponseBuilder
-from main.config.core import res
+from main.config.core import redis, redis_menu
 from main.dto.userDto import UserDto
 import akshare as ak
 from jinja2 import Markup
@@ -53,74 +53,92 @@ def stock_zh_ah_name_dict():
 
 
 
-
+# 上交所
 @stock_app.route("/shang_stock_exchange")
 def shang_stock_exchange():
-    # Get U.S. stock Amazon's price info
-    stock_sse_summary_df = ak.stock_sse_summary()
-    x_set = set([])
-    y_item_list = set([])
-    # print(type(stock_sse_summary_df));
 
-    for row in stock_sse_summary_df.iterrows():
-        x_set.add(row[1]['type'])
-        item = row[1]['item'].strip().replace("（份）", "")
-        y_item_list.add(item)
-    y_item_option = []
-    for stock in y_item_list:
-        res2 = [i[1]['number'] for i in stock_sse_summary_df.iterrows() if
-                i[1]['item'].strip().replace("（份）", "") == stock]
-        option = {stock: res2}
-        y_item_option.append(option)
+    res = redis.get(redis_menu + "shang_stock_exchange");
+    print(res);
+    if res is not None:
+        # redis 中存在redsi键值
+        return  res;
+    else:
+        # 不存在
+        # Get U.S. stock Amazon's price info
+        stock_sse_summary_df = ak.stock_sse_summary()
+        x_set = set([])
+        y_item_list = set([])
+        # print(type(stock_sse_summary_df));
 
-    c = (Bar().add_xaxis(
-        x_set
-    ).set_global_opts(
-        xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
-        title_opts=opts.TitleOpts(title="上交所总貌", subtitle="市场详情"),
-        yaxis_opts=opts.AxisOpts(
-            axislabel_opts=opts.LabelOpts(
-                formatter="{value}")),
-        toolbox_opts=opts.ToolboxOpts(),
-        legend_opts=opts.LegendOpts(is_show=False),
-    ))
-    for row in y_item_option:
-        for key in row:
-            print(key)
-            c.add_yaxis(key, row[key], gap="20%")
+        for row in stock_sse_summary_df.iterrows():
+            x_set.add(row[1]['type'])
+            item = row[1]['item'].strip().replace("（份）", "")
+            y_item_list.add(item)
+        y_item_option = []
+        for stock in y_item_list:
+            res2 = [i[1]['number'] for i in stock_sse_summary_df.iterrows() if
+                    i[1]['item'].strip().replace("（份）", "") == stock]
+            option = {stock: res2}
+            y_item_option.append(option)
 
-    response = ReponseBuilder(True,c.dump_options_with_quotes());
-    return json.dumps(response.__dict__);
+        c = (Bar().add_xaxis(
+            x_set
+        ).set_global_opts(
+            xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
+            title_opts=opts.TitleOpts(title="上交所总貌", subtitle="市场详情"),
+            yaxis_opts=opts.AxisOpts(
+                axislabel_opts=opts.LabelOpts(
+                    formatter="{value}")),
+            toolbox_opts=opts.ToolboxOpts(),
+            legend_opts=opts.LegendOpts(is_show=False),
+        ))
+        for row in y_item_option:
+            for key in row:
+                print(key)
+                c.add_yaxis(key, row[key], gap="20%")
+
+        response = ReponseBuilder(True,c.dump_options_with_quotes());
+        resJson = json.dumps(response.__dict__);
+        redis.setex(redis_menu+"shang_stock_exchange", 3600, resJson)
+        return resJson;
 
 
 # 深交所
 @stock_app.route("/sheng_stock_exchange")
 def shen_stock_exchange():
-    stock_szse_summary_df = ak.stock_szse_summary()
-    # print(stock_szse_summary_df)
-    category = []
-    number = []
-    for row in stock_szse_summary_df.iterrows():
-        category.append(row[1]['证券类别'])
-        number.append((row[1]['数量(只)']))
+    res = redis.get(redis_menu + "sheng_stock_exchange");
+    print(res);
+    if res is not None:
+        return res;
+    else:
 
-    c = (
-        Pie(init_opts=opts.InitOpts(width="1600px", height="1000px"))
-            .add(
-            "深交所总貌",
-            [list(z) for z in zip(category, number)],
-            center=["35%", "50%"],
-        )
-            .set_global_opts(
-            title_opts=opts.TitleOpts(title="深交所总貌"),
-            legend_opts=opts.LegendOpts(pos_left="15%"),
-        )
-            .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c} ({d}%)"))
-            .set_series_opts(
-            tooltip_opts=opts.TooltipOpts(
-                trigger="item", formatter="{a} <br/>{b}: {c} ({d}%)"
-            ))
+        stock_szse_summary_df = ak.stock_szse_summary()
+        # print(stock_szse_summary_df)
+        category = []
+        number = []
+        for row in stock_szse_summary_df.iterrows():
+            category.append(row[1]['证券类别'])
+            number.append((row[1]['数量(只)']))
 
-    )
-    response = ReponseBuilder(True, c.dump_options_with_quotes());
-    return json.dumps(response.__dict__);
+        c = (
+            Pie(init_opts=opts.InitOpts(width="1600px", height="1000px"))
+                .add(
+                "深交所总貌",
+                [list(z) for z in zip(category, number)],
+                center=["35%", "50%"],
+            )
+                .set_global_opts(
+                title_opts=opts.TitleOpts(title="深交所总貌"),
+                legend_opts=opts.LegendOpts(pos_left="15%"),
+            )
+                .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c} ({d}%)"))
+                .set_series_opts(
+                tooltip_opts=opts.TooltipOpts(
+                    trigger="item", formatter="{a} <br/>{b}: {c} ({d}%)"
+                ))
+
+        )
+        response = ReponseBuilder(True, c.dump_options_with_quotes());
+        resJson = json.dumps(response.__dict__)
+        redis.setex(redis_menu + "sheng_stock_exchange", 3600, resJson);
+        return resJson;
