@@ -73,3 +73,21 @@ template_config = {
     "version": "1.0.0"
   }
 }
+
+JOBS = [
+    {
+        'id': 'job1',
+        'func': 'flask-ap:test_data',
+        'args': '',
+        'trigger': {
+            'type': 'cron',
+            'day_of_week': "mon-fri",
+            'hour': '0-23',
+            'minute': '0-11',
+            'second': '*/5'
+        }
+
+    }
+]
+
+SCHEDULER_API_ENABLED = True

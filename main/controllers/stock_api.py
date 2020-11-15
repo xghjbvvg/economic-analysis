@@ -1,8 +1,6 @@
 import json
 
 from flask import Blueprint, Flask, abort, jsonify, request
-from markupsafe import Markup
-
 from main.config import db
 from main.config.ResponseBuilder import ReponseBuilder
 from main.config.core import redis, redis_menu
@@ -34,22 +32,28 @@ def get(user_id):
     session.commit()
     return "success";
 
-
+# 获取AH上市字典集合
 @stock_app.route('/stock_zh_ah_name_dict', methods={'get'})
 def stock_zh_ah_name_dict():
-    print(6)
-    stock_zh_ah_name_dict = ak.stock_zh_ah_name();
+    stock_info_a_code_name_df = ak.stock_info_a_code_name();
     stock_list = [];
-    for key in stock_zh_ah_name_dict:
+    # 当前股票字典
+    for row in stock_info_a_code_name_df.iterrows():
         dict_item = StockAhNameDict();
-        dict_item.code = key;
-        dict_item.name = stock_zh_ah_name_dict[key];
+        dict_item.code = row[1]['code'];
+        dict_item.name = row[1]['name'];
         stock_list.append(dict_item);
-    print(stock_list);
-    session.add_all(stock_list)
-    session.commit()
-    return "success"
 
+    # 本地mysql股票字典
+    # mysql_stock_info = session.query(StockAhNameDict).all();
+    num_rows_deleted = db.session.query(StockAhNameDict).delete()
+    print(num_rows_deleted);
+
+
+    session.add_all(stock_list);
+    session.commit();
+    response = ReponseBuilder(True, "success");
+    return json.dumps(response.__dict__);
 
 
 
