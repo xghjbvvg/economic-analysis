@@ -6,6 +6,12 @@ from main.config.config import config, template_config, swagger_config, Developm
 from flask_sqlalchemy import SQLAlchemy
 from apscheduler.schedulers.blocking import BlockingScheduler
 from datetime import datetime
+import pymongo
+
+mongoclient = pymongo.MongoClient("mongodb://localhost:27017/")
+mongodb = mongoclient["economic_analysis"]
+
+stock_zh_a_new_col = mongodb["stock_zh_a_new"]
 
 db = SQLAlchemy()
 
@@ -17,6 +23,8 @@ def timed_task():
 def create_app(config_name):
     app = Flask(__name__)
     CORS(app, resources=r'/*')
+
+    # cors = CORS(app, resources={r"/api/*": {"origins": "*"}});
     app.config.from_object(config[config_name])
     config[config_name].init_app(app=app)
     db.init_app(app=app)
@@ -36,5 +44,9 @@ def create_app(config_name):
 
     # 注册到蓝图
     from main.controllers.stock_api import stock_app
+    from main.controllers.stock_account_api import account_app
+
     app.register_blueprint(stock_app)
+    app.register_blueprint(account_app);
+    CORS(account_app)
     return app
