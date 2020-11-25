@@ -1,0 +1,3 @@
+
+class AnalystRank:
+    pass

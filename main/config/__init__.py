@@ -11,7 +11,8 @@ import pymongo
 mongoclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mongodb = mongoclient["economic_analysis"]
 
-stock_zh_a_new_col = mongodb["stock_zh_a_new"]
+stock_zh_a_new_col = mongodb["stock_zh_a_new"];
+stock_analyst_rank_col = mongodb["stock_analyst_rank"];
 
 db = SQLAlchemy()
 

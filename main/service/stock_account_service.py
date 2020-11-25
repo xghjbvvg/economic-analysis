@@ -1,3 +1,4 @@
+import functools
 import json
 
 import akshare as ak
@@ -5,8 +6,11 @@ import pyecharts.options as opts
 from pyecharts.charts import Line, Grid
 from pyecharts.faker import Faker
 
+from config import stock_analyst_rank_col
 from config.core import redis, redis_menu
+from models.AnalystRank import AnalystRank
 from service.test_data import all_data
+from bson import json_util
 
 
 def stock_em_account_detail():
@@ -67,3 +71,48 @@ def stock_em_account_detail():
 
     )
     return c
+
+
+
+def stock_em_analyst_rank():
+    flag = redis.get(redis_menu + "tock_analyst_rank");
+    analystRankList = [];
+    if flag is not None:
+
+        analystRank = stock_analyst_rank_col.find({}).sort("lastYearSyl",-1);
+        # analystRank.sort(key=lambda x: x.lastYearSyl)
+        return json_util.dumps(analystRank);
+    else:
+        stock_analyst_rank_col.delete_many({});
+        stock_em_analyst_rank_df = ak.stock_em_analyst_rank()
+        for row in stock_em_analyst_rank_df.iterrows():
+            analystRank = AnalystRank();
+            # 2020年收益率
+            analystRank.lastYearSyl = row[1]['LastYearSyl'];
+            # # 股票名称
+            analystRank.stockName = row[1]['StockName'];
+            # # 姓名
+            analystRank.fxsName = row[1]['FxsName'];
+            # # 单位
+            analystRank.ssjg = row[1]['Ssjg'];
+            # # 年度指数
+            analystRank.newIndex = row[1]['NewIndex'];
+            # # 3个月收益率
+            analystRank.earnings_3 = row[1]['Earnings_3'];
+            # # 6个月收益率
+            analystRank.earnings_6 = row[1]['Earnings_6'];
+            # # 12个月收益率
+            analystRank.earnings_12 = row[1]['Earnings_12'];
+            # # 2020最新个股评级
+            analystRank.newGgpj = row[1]['NewGgpj'];
+            # # 成分股个数
+            analystRank.stockcount = row[1]['stockcount'];
+
+            analystRank.fxsCode = row[1]['FxsCode'];
+
+            analystRankList.append(analystRank.__dict__);
+
+        stock_analyst_rank_col.insert_many(analystRankList);
+        analystRankList.sort(key=lambda x: x['lastYearSyl'], reverse=True)
+        # redis.setex(redis_menu + "tock_analyst_rank", 3600 * 12, "1");
+        return json_util.dumps(analystRankList);

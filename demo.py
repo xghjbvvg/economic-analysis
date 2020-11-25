@@ -1,64 +1,52 @@
+import json
+
 import akshare as ak
-import matplotlib.pyplot as plt
-# 导入柱状图-Bar
-from pyecharts.charts import Bar
-from pyecharts import options as opts
-# print(ak.__version__)
 
-# hist_df = ak.stock_us_daily(symbol="AMZN")  # Get U.S. stock Amazon's price info
-# print(hist_df)
+from config import stock_analyst_rank_col
+from config.core import redis, redis_menu
+from models.AnalystRank import AnalystRank
+
+flag = redis.get(redis_menu + "tock_analyst_rank");
+analystRankList = [];
+if flag  is not None:
+
+    analystRankList = stock_analyst_rank_col.find();
+else:
+    stock_em_analyst_rank_df = ak.stock_em_analyst_rank()
+    for row in stock_em_analyst_rank_df.iterrows():
+        analystRank = AnalystRank();
+        # 2020年收益率
+        analystRank.lastYearSyl = row[1]['LastYearSyl'];
+        # # 股票名称
+        analystRank.stockName = row[1]['StockName'];
+        # # 姓名
+        analystRank.fxsName = row[1]['FxsName'];
+        # # 单位
+        analystRank.ssjg = row[1]['Ssjg'];
+        # # 年度指数
+        analystRank.stockName = row[1]['NewIndex'];
+        # # 3个月收益率
+        analystRank.earnings_3 = row[1]['Earnings_3'];
+        # # 6个月收益率
+        analystRank.earnings_6 = row[1]['Earnings_6'];
+        # # 12个月收益率
+        analystRank.earnings_12 = row[1]['Earnings_12'];
+        # # 2020最新个股评级
+        analystRank.newGgpj = row[1]['NewGgpj'];
+        # # 2020最新个股评级
+        analystRank.stockcount = row[1]['stockcount'];
+
+        analystRank.fxsCode = row[1]['FxsCode'];
 
 
-# 设置行名
-# V1 版本开始支持链式调用
-from pyecharts import options as opts
-from pyecharts.charts import Pie
-from pyecharts.faker import Faker
+        analystRankList.append(analystRank.__dict__);
 
-# c = (
-#     Pie()
-#     .add("", [list(z) for z in zip(Faker.choose(), Faker.values())])
-#     .set_global_opts(title_opts=opts.TitleOpts(title="Pie-基本示例"))
-#     .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}"))
-#     .render("pie_base.html")
-# )
+    stock_analyst_rank_col.insert_many(analystRankList);
+    redis.setex(redis_menu + "tock_analyst_rank", 3600 * 12, "1")
+    print(analystRankList)
 
-# stock_sse_summary_df = ak.stock_sse_summary();
-# x_set = set([]);
-# y_item_list = set([]);
-# # print(type(stock_sse_summary_df));
-#
-# for row in stock_sse_summary_df.iterrows():
-#     print(row[1])
-#     x_set.add(row[1]['type']);
-#     item = row[1]['item'].strip().replace("（份）","");
-#     y_item_list.add(item);
-# y_item_option = [];
-# for stock in y_item_list:
-#     res2 = [i[1]['number'] for i in stock_sse_summary_df.iterrows() if i[1]['item'].strip().replace("（份）","") == stock]
-#     option = {stock: res2};
-#     y_item_option.append(option);
 
-stock_szse_summary_df = ak.stock_szse_summary()
-# print(stock_szse_summary_df)
-category = []
-number = []
-for row in stock_szse_summary_df.iterrows():
-    category.append(row[1]['证券类别'])
-    number.append((row[1]['数量(只)']))
+for x in analystRankList:
+  print(x)
 
-print(category)
-print(number)
-c = (
-    Pie()
-    .add(
-        "",
-        [list(z) for z in zip(category, number)],
-        center=["35%", "50%"],
-    )
-    .set_global_opts(
-        title_opts=opts.TitleOpts(title="深交所"),
-        legend_opts=opts.LegendOpts(pos_left="15%"),
-    )
-    .set_series_opts(label_opts=opts.LabelOpts(trigger="item", formatter="{a} <br/>{b}: {c} ({d}%)"))
-)
+
