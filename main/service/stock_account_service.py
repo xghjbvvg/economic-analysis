@@ -114,5 +114,5 @@ def stock_em_analyst_rank():
 
         stock_analyst_rank_col.insert_many(analystRankList);
         analystRankList.sort(key=lambda x: x['lastYearSyl'], reverse=True)
-        # redis.setex(redis_menu + "tock_analyst_rank", 3600 * 12, "1");
+        redis.setex(redis_menu + "tock_analyst_rank", 3600 * 12, "1");
         return json_util.dumps(analystRankList);
