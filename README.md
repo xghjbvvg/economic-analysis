@@ -12,5 +12,5 @@
 ## 分析师详情 /api/account
  * /detail 获取每月新增投资人折线图
  * /analyst_rank 分析师排名榜,前50
- */analyst_info/<int:code> 获取投资人股票详情，使用selenium进行数据爬取，并且进行截图显示
+ * /analyst_info/<int:code> 获取投资人股票详情，使用selenium进行数据爬取，并且进行截图显示
 
