@@ -1,52 +1,38 @@
-import json
+# from selenium import webdriver
+# import time
+#
+# # 获取一个浏览器对象
+# br = webdriver.Chrome()
+#
+# # 打开一个页面
+# br.get('http://data.eastmoney.com/dataapi/invest/other?href=/api/Zgfxzs/json/AnalysisIndexNew.aspx&paramsstr=index%3D1%26size%3D100%26code%3D11000200926')
+#
+# # 获取页面的源代码（运行后在内存中渲染的页面元素）
+# print(br.page_source)
+# import os
+# import time
+# from pathlib import Path
+#
+# path = str((Path(__file__).parent).absolute()) + "/static/img_" + str(time.time()).replace(".","") + '.png';
+# fd = open(path, mode="w", encoding="utf-8")
+# fd.close()
 
-import akshare as ak
+import socket
 
-from config import stock_analyst_rank_col
-from config.core import redis, redis_menu
-from models.AnalystRank import AnalystRank
+def get_host_ip():
+    """
+    查询本机ip地址
+    :return: ip
+    """
+    global s;
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
 
-flag = redis.get(redis_menu + "tock_analyst_rank");
-analystRankList = [];
-if flag  is not None:
+    return ip
 
-    analystRankList = stock_analyst_rank_col.find();
-else:
-    stock_em_analyst_rank_df = ak.stock_em_analyst_rank()
-    for row in stock_em_analyst_rank_df.iterrows():
-        analystRank = AnalystRank();
-        # 2020年收益率
-        analystRank.lastYearSyl = row[1]['LastYearSyl'];
-        # # 股票名称
-        analystRank.stockName = row[1]['StockName'];
-        # # 姓名
-        analystRank.fxsName = row[1]['FxsName'];
-        # # 单位
-        analystRank.ssjg = row[1]['Ssjg'];
-        # # 年度指数
-        analystRank.stockName = row[1]['NewIndex'];
-        # # 3个月收益率
-        analystRank.earnings_3 = row[1]['Earnings_3'];
-        # # 6个月收益率
-        analystRank.earnings_6 = row[1]['Earnings_6'];
-        # # 12个月收益率
-        analystRank.earnings_12 = row[1]['Earnings_12'];
-        # # 2020最新个股评级
-        analystRank.newGgpj = row[1]['NewGgpj'];
-        # # 2020最新个股评级
-        analystRank.stockcount = row[1]['stockcount'];
-
-        analystRank.fxsCode = row[1]['FxsCode'];
-
-
-        analystRankList.append(analystRank.__dict__);
-
-    stock_analyst_rank_col.insert_many(analystRankList);
-    redis.setex(redis_menu + "tock_analyst_rank", 3600 * 12, "1")
-    print(analystRankList)
-
-
-for x in analystRankList:
-  print(x)
-
-
+if __name__ == '__main__':
+    print(get_host_ip())

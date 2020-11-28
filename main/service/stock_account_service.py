@@ -1,17 +1,20 @@
-import functools
 import json
+import os
+from pathlib import Path
+import socket
 
+
+from bs4 import BeautifulSoup
+from selenium import webdriver
 import akshare as ak
 import pyecharts.options as opts
-from pyecharts.charts import Line, Grid
-from pyecharts.faker import Faker
+from pyecharts.charts import Line
 
-from config import stock_analyst_rank_col
+from app import stock_analyst_rank_col, rootpath, app_port
 from config.core import redis, redis_menu
 from models.AnalystRank import AnalystRank
-from service.test_data import all_data
 from bson import json_util
-
+import time
 
 def stock_em_account_detail():
     account_json = redis.get(redis_menu + "stock_em_account");
@@ -116,3 +119,54 @@ def stock_em_analyst_rank():
         analystRankList.sort(key=lambda x: x['lastYearSyl'], reverse=True)
         redis.setex(redis_menu + "tock_analyst_rank", 3600 * 12, "1");
         return json_util.dumps(analystRankList);
+
+
+def stock_em_analyst_info(code):
+    # 获取一个浏览器对象
+    br = webdriver.Chrome()
+
+    # 打开一个页面
+    br.get(
+        'http://data.eastmoney.com/dataapi/invest/other?href=/api/Zgfxzs/json/AnalysisIndexNew.aspx&paramsstr=index%3D1%26size%3D100%26code%3D'+str(code))
+
+    # 获取页面的源代码（运行后在内存中渲染的页面元素）
+    soup = BeautifulSoup(br.page_source, 'lxml')
+    br.close();
+    ss = soup.select('pre')[0]
+    res = ss.text;
+    return res;
+
+
+def stock_em_analyst_exponent(code):
+    # 获取一个浏览器对象
+    br = webdriver.Chrome()
+    br.set_window_size(1200, 900)
+    # 打开一个页面
+    br.get('http://data.eastmoney.com/invest/invest/'+str(code)+'.html');
+    # time.sleep(1)
+    ele = br.find_element_by_class_name('fContent');
+    # ele = br.find_element_by_id("flash")
+    filename = "/static/img_" + str(code) + '.png';
+    path = rootpath + filename;
+    if os.path.exists(path):
+        os.remove(path);
+    file = open(path, mode="w", encoding="utf-8")
+    file.close()
+    ele.screenshot(path)  # 元素截图
+    br.close();
+
+    return "http://"+get_host_ip()+":"+str(app_port)+filename;
+
+def get_host_ip():
+    """
+    查询本机ip地址
+    :return:
+    """
+    try:
+        s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8',80))
+        ip=s.getsockname()[0]
+    finally:
+        s.close()
+
+    return ip

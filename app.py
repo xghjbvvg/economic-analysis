@@ -1,9 +1,60 @@
-import json
+from pathlib import Path
 
+from flasgger import Swagger
 from flask import Flask
+from flask_cors import CORS
 
-from main.config import create_app
-import akshare as ak
+from config.errors import errors
+from main.config.config import config, template_config, swagger_config
+from flask_sqlalchemy import SQLAlchemy
+from apscheduler.schedulers.blocking import BlockingScheduler
+from datetime import datetime
+import pymongo
+
+mongoclient = pymongo.MongoClient("mongodb://localhost:27017/")
+mongodb = mongoclient["economic_analysis"]
+
+stock_zh_a_new_col = mongodb["stock_zh_a_new"];
+stock_analyst_rank_col = mongodb["stock_analyst_rank"];
+
+db = SQLAlchemy()
+rootpath = str((Path(__file__).parent).absolute());
+app_port = 5000;
+def timed_task():
+    print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"));
+
+
+def create_app(config_name):
+    app = Flask(__name__)
+    CORS(app, resources=r'/*')
+
+    # cors = CORS(app, resources={r"/api/*": {"origins": "*"}});
+    app.config.from_object(config[config_name])
+    config[config_name].init_app(app=app)
+    db.init_app(app=app)
+
+    # 创建当前线程执行的schedulers
+    scheduler = BlockingScheduler()
+    # 添加调度任务(timed_task),触发器选择interval(间隔性),间隔时长为5秒
+    scheduler.add_job(timed_task, 'interval', seconds=5)
+    # 启动调度任务
+    # scheduler.start()
+
+    Swagger(app, template=template_config, config=swagger_config)
+
+    # 统一错误处理
+
+    app.register_blueprint(errors)
+
+    # 注册到蓝图
+    from main.controllers.stock_api import stock_app
+    from main.controllers.stock_account_api import account_app
+
+    app.register_blueprint(stock_app)
+    app.register_blueprint(account_app);
+    CORS(account_app)
+    return app
+
 
 app = create_app("default")
 
@@ -12,54 +63,10 @@ def index():
     return "hello,world"
 
 
-
-#
-# @app.route("/")
-# def index():
-#     # Get U.S. stock Amazon's price info
-#     stock_sse_summary_df = ak.stock_sse_summary()
-#     x_set = set([])
-#     y_item_list = set([])
-#     # print(type(stock_sse_summary_df));
-#
-#     for row in stock_sse_summary_df.iterrows():
-#         x_set.add(row[1]['type'])
-#         item = row[1]['item'].strip().replace("（份）", "")
-#         y_item_list.add(item)
-#     y_item_option = []
-#     for stock in y_item_list:
-#         res2 = [i[1]['number'] for i in stock_sse_summary_df.iterrows() if
-#                 i[1]['item'].strip().replace("（份）", "") == stock]
-#         option = {stock: res2}
-#         y_item_option.append(option)
-#
-#     c = (Bar().add_xaxis(
-#         x_set
-#     ).set_global_opts(
-#         xaxis_opts=opts.AxisOpts(axislabel_opts=opts.LabelOpts(rotate=-15)),
-#         title_opts=opts.TitleOpts(title="上交所", subtitle="市场详情"),
-#         yaxis_opts=opts.AxisOpts(
-#             axislabel_opts=opts.LabelOpts(
-#                 formatter="{value}")),
-#         toolbox_opts=opts.ToolboxOpts(),
-#         legend_opts=opts.LegendOpts(is_show=False),
-#     ))
-#     for row in y_item_option:
-#         for key in row:
-#             print(key)
-#             c.add_yaxis(key, row[key], gap="20%")
-#     return Markup(c.render_embed())
-#
-#
-# # 上交所总貌
-#
-#
-
-
 if __name__ == '__main__':
     # app = create_app("default")
     app.run(
         host='0.0.0.0',
-        port=5000,
+        port=app_port,
         debug=True
-    )
+    );

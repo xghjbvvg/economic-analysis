@@ -1,12 +1,12 @@
 import json
 
-from flask import Blueprint, Flask, abort, jsonify, request
-from main.config import db, stock_zh_a_new_col
+from flask import Blueprint
+
+from app import db, stock_zh_a_new_col
 from main.config.ResponseBuilder import ReponseBuilder
 from main.config.core import redis, redis_menu
 from main.dto.userDto import UserDto
 import akshare as ak
-from jinja2 import Markup
 from pyecharts import options as opts
 from pyecharts.charts import Bar
 from pyecharts.charts import Pie
