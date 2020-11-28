@@ -1,6 +1,6 @@
 # economic-analysis
 
-# 系统魔蝎功能需要安装chromedriver.exe，集成mysql，Mongodb以及redis，都在app.py中已配置
+# 系统某些功能需要安装chromedriver.exe，集成MySQL，Mongodb以及Redis，都在app.py中已配置
 
 # api接口：
 ## 总貌 /api/stock/
